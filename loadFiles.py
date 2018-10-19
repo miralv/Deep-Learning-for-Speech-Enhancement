@@ -18,6 +18,18 @@ def collectAudioFiles():
     #now is all the audio files collected in aufioFiles
     return audioFiles
 
+
+# Need to create a generator for use in the DNN
+
+def generateAudioFromFile():
+    for group in range(1,13):
+        for file in glob.glob("asdgf"):
+
+
+
+
+
+
 #FOR TESTING
 #want to listen, to hear possible changes
 #filePathSave = Path("C:/Users/Mira/Documents/NTNU1819/Bokmål/test_many.wav")

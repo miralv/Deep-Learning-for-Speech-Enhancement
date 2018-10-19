@@ -1,12 +1,12 @@
 import numpy
-#Scale from intN to float in [-1,1]
+# Scale from intN to float in [-1,1]
 def scaleDown(a,N):
     c = numpy.divide(a, 2.0**(N-1) -1)
     #because the minimum value was 2**N-1, we might have values < -1.
     c = list(map(lambda x: max(x,-1.0), c))
     return c
 
-#Scale up from [-1,1] to intN
+# Scale up from [-1,1] to intN
 def scaleUp(a,N):
     b = list(map(lambda x : x*(2**(N-1)-1),a))
     if N == 32:
@@ -17,7 +17,6 @@ def scaleUp(a,N):
 
 
 # Stack the matrix s.t. the net sees 5 windows at a time. 
-
 def stackMatrix(matrix,windowLength):
     Nrows,Ncolumns = matrix.shape
 
@@ -48,8 +47,28 @@ def stackMatrix(matrix,windowLength):
     stackedMatrix[Nrows-1][2*Ncolumns:3*Ncolumns]= matrix[Nrows-1]#midten
     return stackedMatrix
 
-
+# Help function used in stackMatrix
 def mapToVector(matrix):
     Nrow,Ncol = matrix.shape
     vector = matrix.reshape(1,5*Ncol)
     return vector
+
+# Calculate current SNR-level
+def calculateSNR(noise,cleanAudio):
+    snr = (findRMS(cleanAudio)**2)/(findRMS(noise)**2)
+    return snr
+
+# Decide wanted SNR-level and change magnitude of the noise vector accordingly
+def decideSNR(noise,cleanAudio,SNRdB):
+    # returns the noise-vector multiplied by a constant s.t. 
+    # the wanted SNR-level is obtained.
+    Anoise = findRMS(noise)
+    Aclean = findRMS(cleanAudio)
+    ANoise_new = Aclean/(10**(SNRdB/20))
+    factor = ANoise_new/Anoise
+    return factor*noise
+
+# Find RMS of a vector
+def findRMS(vector):
+    return numpy.sqrt(numpy.mean(vector**2))
+

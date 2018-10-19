@@ -39,8 +39,9 @@ rawAudio = collectAudioFiles()
 rawAudio = rawAudio[0:10000]
 ## Perform preprocessing
 # The raw audio file needs to be down sampled, shifted to the range [-1,1] and fourier transformed
-[amplitude, phase] = preprocessing(rawAudio,q,N,windowLength)
-#preprocessedArray = preprocessing(rawAudio,q,N,windowLength)
+[amplitudeCompressed, phase] = preprocessing(rawAudio,q,N,windowLength)
+
+
 # Stack the windows such that one row in stacked contains two windows on both side of window i
 stacked = stackMatrix(amplitude,windowLength)
 
