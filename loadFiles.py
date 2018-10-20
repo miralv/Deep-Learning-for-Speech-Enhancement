@@ -20,14 +20,27 @@ def collectAudioFiles():
 
 
 # Need to create a generator for use in the DNN
-
-def generateAudioFromFile():
+def generateAudioFromFile(windowLength):
+    L = int(numpy.floor(windowLength/2))
+    audioFolder = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/part_1/group_"
+    audioFiles = numpy.array([],dtype = numpy.int16)
     for group in range(1,13):
-        for file in glob.glob("asdgf"):
+        if group < 10:
+            g = "0" + str(group)
+        else:
+            g = str(group)
 
+        for file in glob.glob(audioFolder + g +"/*.wav"):
+            f_rate, data = scipy.io.wavfile.read(file)
+            # Make sure that the audio clip contains an integer number of halfWindows
+            N_new = len(data) - int(len(data)%L)
+            data = data[0:N_new]
+            audioFiles = numpy.append(audioFiles,data)
 
-
-
+    # Then all audio files are put in audioFiles
+    # Need to make a corresponding noiseFiles
+    # 
+    return audioFiles
 
 
 #FOR TESTING
