@@ -20,19 +20,15 @@ from preprocessing import preprocessing
 from loadFiles import  generateAudioFromFile
 from tools import scaleUp,stackMatrix
 
-## test
-a = generateAudioFromFile(256)
-print(len(a))
+
 
 ## Define variables
 windowLength = 256  # Number of samples in each window
 N = 16              # The audioFiles are of type intN
 q = 3               # Downsampling factor
-batch_size = 128    # How many observations the neural net looks at before updating parameters
+batchSize = 128    # How many observations the neural net looks at before updating parameters
 epochs = 1#20       # The number of training runs thorugh the data set
-
-
-
+observationsGeneratedPerLoop = 10000
 
 ## Load audio files from file, and put them together in one file. 
 #rawAudio = collectAudioFiles()
@@ -64,7 +60,8 @@ epochs = 1#20       # The number of training runs thorugh the data set
 
 #model.summary()
 
-
+model.fit_generator(generateAudioFromFile(windowLength,q,N,observationsGeneratedPerLoop),
+                    steps_per_epoch=10000, epochs=10)
 
 ### Recover signal
 ##Dette skal nok flyttes inn i recoverSignal 

@@ -2,6 +2,7 @@ import numpy
 from scipy.signal import decimate
 from tools import *
 
+# Downsample, scale perform Hanning and apply FFT on the rawAudio
 def preprocessing(rawAudio,q,N,windowLength):
     # q: downsampling factor (typically 3)
     # N: audiofile has values in intN
@@ -16,15 +17,18 @@ def preprocessing(rawAudio,q,N,windowLength):
     # Obtain windows and apply Hanning
     hanningArray = Hanning(y,windowLength)
 
+    # Take the fourier transform, and get it returned in phormat z = x + iy
+    fftArray = numpy.fft.fft(hanningArray)
     # Take the fast fourier transform
-    [amplitude,storedPhase] = fourier(hanningArray,windowLength)
+    #[amplitude,storedPhase] = fourier(hanningArray,windowLength)
+    
     # The second half of the sequence gives no new information
-    amplitude = amplitude[:,0:int(windowLength/2+1)]
+    #amplitude = amplitude[:,0:int(windowLength/2+1)]
     
     # Take log10 of the amplitude
-    amplitudeCompressed = numpy.log10(amplitude)
+    #amplitudeCompressed = numpy.log10(amplitude)
 
-    return [amplitudeCompressed,storedPhase]
+    return fftArray
 
 def fourier(hanningArray,windowLength):
     # Take fft of each window, i.e. each row
