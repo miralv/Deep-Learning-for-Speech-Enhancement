@@ -72,3 +72,7 @@ def decideSNR(noise,cleanAudio,SNRdB):
 def findRMS(vector):
     return numpy.sqrt(numpy.mean(vector**2))
 
+# Calculate the ideal ratio mask
+def idealRatioMask():
+
+    return 0

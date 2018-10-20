@@ -5,7 +5,7 @@ import glob
 import scipy.io.wavfile
 
 from preprocessing import preprocessing
-
+from tools import stackMatrix
 # Need to create a generator for use in the DNN
 def generateAudioFromFile(windowLength,q,N,batchSize, SNRdB):
     L = int(numpy.floor(windowLength/2))
@@ -54,24 +54,25 @@ def generateAudioFromFile(windowLength,q,N,batchSize, SNRdB):
 
     # Add amplitudes to obtain desired snr
     amplitudeNoiseAdjusted = decideSNR(amplitudeAudio,amplitudeNoise,SNRdB)
-    x = amplitudeAudio + amplitudeNoiseAdjusted
+    mixed = amplitudeAudio + amplitudeNoiseAdjusted
 
     # Keep only the single sided spectrum
-    x = x[:,0:int(windowLength/2+1)]
-    
+    mixed = mixed[:,0:int(windowLength/2+1)]
+    clean = amplitudeAudio[:,0:int(windowLength/2+1)]
     # log10
-    x = numpy.log10(x)
-
+    mixed = numpy.log10(mixed)
+    clean = numpy.log10(clean)
+    
     # Calculate IRM
     
     # Need to select audio clips randomly from audioFiles. How many are we choosing at a time? Just test something.
     while True:
-        startIndexAudio = random.randint(0,len(audioFiles)-batchSize)
-        startIndexNoise = random.randint(0,len(noiseFiles)-batchSize)
-        y = audioFiles[startIndexAudio:startIndexAudio+batchSize]
-        x = audioFiles[startIndexAudio:startIndexAudio+batchSize] + noiseFiles[startIndexNoise:startIndexNoise+batchSize]
-
-        # Need to stack the data
+        startIndexClean = random.randint(0,len(mixed)-batchSize)
+        startIndexMixed = random.randint(0,len(mixed)-batchSize)
+        y = clean[startIndexClean:startIndexClean+batchSize] #her skal vi ha irm
+        x = mixed[startIndexMixed:startIndexMixed+batchSize]
+        # Need to stack x
+        xStacked = stackMatrix(x,windowLength)
         
-        yield xPreprocessed,yPreprocessed
+        yield xStacked,y
     
