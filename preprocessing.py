@@ -9,11 +9,12 @@ def preprocessing(rawAudio,q,N,windowLength):
     # windowLength: number of samples in each window
     
     # Downsample
+    print('y before down sampling:', len(rawAudio))
     y_new = decimate(rawAudio,q,ftype="fir")
-    
+    print("y after down sampling:",len(y_new))
+
     # Shift to range [-1,1]
     y = scaleDown(y_new,N)
-
     # Obtain windows and apply Hanning
     hanningArray = Hanning(y,windowLength)
 
@@ -39,19 +40,19 @@ def fourier(hanningArray,windowLength):
     return [amplitude,storedPhase]
 
 
-def Hanning(y,window_length):
+def Hanning(y,windowLength):
     # Create a Hanning window
-    window = numpy.hanning(window_length)
+    window = numpy.hanning(windowLength)
 
     # Apply it
     # Remove entries s.t. there is an integer number of windows 
-    N_use = len(y)-len(y)%window_length
+    N_use = len(y)-len(y)%windowLength
     y_use = y[0:N_use]
-    N_windows = int(numpy.floor(2*N_use/window_length)-1)
-
-    hanningArray = numpy.zeros(shape=(N_windows,window_length))
+    N_windows = int(numpy.floor(2*N_use/windowLength)-1)
+    print(N_windows)
+    hanningArray = numpy.zeros(shape=(N_windows,windowLength))
     for i in range(0,N_windows):
-        start_ind = int(i * window_length/2) #assuming window length is dividible by two.
-        hanningArray[i]= y_use[start_ind:start_ind+window_length]*window
+        start_ind = int(i * windowLength/2) #assuming window length is dividible by two.
+        hanningArray[i]= y_use[start_ind:start_ind+windowLength]*window
 
     return hanningArray

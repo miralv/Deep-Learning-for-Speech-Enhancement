@@ -2,7 +2,7 @@ import numpy
 from pathlib import Path
 import glob
 import scipy.io.wavfile
-from loadFiles import collectAudioFiles
+# from loadFiles import collectAudioFiles
 import sys
 import os
 
@@ -61,8 +61,11 @@ model.add(Dense(outputDim, activation='sigmoid'))
 
 model.summary()
 
-model.fit_generator(generateAudioFromFile(windowLength,q,N,observationsGeneratedPerLoop,SNRdB),
-                    steps_per_epoch=10000, epochs=10)
+model.compile(optimizer='adam', 
+              loss='mse')
+
+model.fit_generator(generateAudioFromFile(windowLength,q,N,batchSize,SNRdB),
+                    steps_per_epoch=10, epochs=10)
 
 ### Recover signal
 ##Dette skal nok flyttes inn i recoverSignal 
