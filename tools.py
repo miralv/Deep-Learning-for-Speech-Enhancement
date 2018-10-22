@@ -73,6 +73,13 @@ def findRMS(vector):
     return numpy.sqrt(numpy.mean(vector**2))
 
 # Calculate the ideal ratio mask
-def idealRatioMask():
-
-    return 0
+def idealRatioMask(cleanAudioMatrix,noiseMatrix,beta):
+    times, frequencies = noiseMatrix.shape
+    IRM = numpy.matrix(shape = (times,frequencies),dtype = float)
+    for t in range(0,times):
+        for f in range(0,frequencies):
+            #for each time-frequency unit
+            speechEnergy = cleanAudioMatrix(t,f)^2
+            noiseEnergy = noiseMatrix(t,f)^2
+            IRM[t,f]= (speechEnergy**2/(speechEnergy**2 + noiseEnergy**2))**beta
+    return IRM

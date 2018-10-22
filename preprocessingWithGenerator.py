@@ -49,8 +49,8 @@ def generateAudioFromFile(windowLength,q,N,batchSize, SNRdB):
     amplitudeNoise = numpy.apply_along_axis(numpy.absolute,axis=1,arr=fftArray)
     
     # Store the phase for reconstruction
-    addedfftArray = audiofftArray + noisefftArray
-    noisyPhase = numpy.apply_along_axis(numpy.angle,axis=1,arr=addedfftArray)
+    mixedfftArray = audiofftArray + noisefftArray
+    mixedPhase = numpy.apply_along_axis(numpy.angle,axis=1,arr=mixedfftArray)
 
     # Add amplitudes to obtain desired snr
     amplitudeNoiseAdjusted = decideSNR(amplitudeAudio,amplitudeNoise,SNRdB)
@@ -59,18 +59,22 @@ def generateAudioFromFile(windowLength,q,N,batchSize, SNRdB):
     # Keep only the single sided spectrum
     mixed = mixed[:,0:int(windowLength/2+1)]
     clean = amplitudeAudio[:,0:int(windowLength/2+1)]
+    noise = amplitudeNoiseAdjusted[:,0:int(windowLength/2+1)]
+
     # log10
     mixed = numpy.log10(mixed)
     clean = numpy.log10(clean)
+    noise = numpy.log10(noise)
     
     # Calculate IRM
-    
+    IRM = idealRatioMask(clean,noise,beta)
+
     # Need to select audio clips randomly from audioFiles. How many are we choosing at a time? Just test something.
     while True:
         startIndexClean = random.randint(0,len(mixed)-batchSize)
         startIndexMixed = random.randint(0,len(mixed)-batchSize)
-        y = clean[startIndexClean:startIndexClean+batchSize] #her skal vi ha irm
-        x = mixed[startIndexMixed:startIndexMixed+batchSize]
+        y = IRM[startIndexClean:startIndexClean+batchSize,:]
+        x = mixed[startIndexMixed:startIndexMixed+batchSize,:]
         # Need to stack x
         xStacked = stackMatrix(x,windowLength)
         

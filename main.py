@@ -26,9 +26,10 @@ from tools import scaleUp,stackMatrix
 windowLength = 256  # Number of samples in each window
 N = 16              # The audioFiles are of type intN
 q = 3               # Downsampling factor
-batchSize = 128    # How many observations the neural net looks at before updating parameters
+batchSize = 128     # How many observations the neural net looks at before updating parameters
 epochs = 1#20       # The number of training runs thorugh the data set
 observationsGeneratedPerLoop = 10000
+SNRdB = 20          # Speech to noise ratio in decibels
 
 ## Load audio files from file, and put them together in one file. 
 #rawAudio = collectAudioFiles()
@@ -43,24 +44,24 @@ observationsGeneratedPerLoop = 10000
 ## Stack the windows such that one row in stacked contains two windows on both side of window i
 #stacked = stackMatrix(amplitudeCompressed,windowLength)
 
-### DNN
-## Split the observations in a training set and a test set
+## DNN
+# Split the observations in a training set and a test set
 #XTrain = stacked
 
-## Specify the dimensions of the net
-#inputDim = int((windowLength/2+1)*5)
-#outputDim = int(windowLength/2+1)
+# Specify the dimensions of the net
+inputDim = int((windowLength/2+1)*5)
+outputDim = int(windowLength/2+1)
 
-#model = Sequential()
-#model.add(Dense(512, activation='relu', input_shape=(inputDim,)))
-#model.add(Dropout(0.2))
-#model.add(Dense(512, activation='relu'))
-#model.add(Dropout(0.2))
-#model.add(Dense(outputDim, activation='sigmoid'))
+model = Sequential()
+model.add(Dense(512, activation='relu', input_shape=(inputDim,)))
+model.add(Dropout(0.2))
+model.add(Dense(512, activation='relu'))
+model.add(Dropout(0.2))
+model.add(Dense(outputDim, activation='sigmoid'))
 
-#model.summary()
+model.summary()
 
-model.fit_generator(generateAudioFromFile(windowLength,q,N,observationsGeneratedPerLoop),
+model.fit_generator(generateAudioFromFile(windowLength,q,N,observationsGeneratedPerLoop,SNRdB),
                     steps_per_epoch=10000, epochs=10)
 
 ### Recover signal
