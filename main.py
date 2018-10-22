@@ -17,7 +17,7 @@ os.chdir(path)
 
 from recoverSignal import inverseFourier, overlapAdd
 from preprocessing import preprocessing
-from loadFiles import  generateAudioFromFile
+from preprocessingWithGenerator import  generateAudioFromFile
 from tools import scaleUp,stackMatrix
 
 
