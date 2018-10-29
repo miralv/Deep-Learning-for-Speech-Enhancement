@@ -54,9 +54,9 @@ def mapToVector(matrix):
     return vector
 
 # Calculate current SNR-level
-def calculateSNR(noise,cleanAudio):
-    snr = (findRMS(cleanAudio)**2)/(findRMS(noise)**2)
-    return snr
+def calculateSNRdB(noise,cleanAudio):
+    SNRdB = 10*numpy.log10((findRMS(cleanAudio)**2)/(findRMS(noise)**2))
+    return SNRdB
 
 # Decide wanted SNR-level and change magnitude of the noise vector accordingly
 def decideSNR(noise,cleanAudio,SNRdB):
@@ -79,7 +79,7 @@ def idealRatioMask(cleanAudioMatrix,noiseMatrix,beta):
     for t in range(0,times):
         for f in range(0,frequencies):
             #for each time-frequency unit
-            speechEnergy = cleanAudioMatrix[t,f]**2
-            noiseEnergy = noiseMatrix[t,f]**2
-            IRM[t,f]= (speechEnergy**2/(speechEnergy**2 + noiseEnergy**2))**beta
+            speechEnergySquared = cleanAudioMatrix[t,f]**2
+            noiseEnergySquared = noiseMatrix[t,f]**2
+            IRM[t,f]= (speechEnergySquared/(speechEnergySquared + noiseEnergySquared))**beta
     return IRM

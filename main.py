@@ -15,12 +15,11 @@ from keras.optimizers import RMSprop
 path = Path("C:/Users/Mira/source/repos/Prosjektoppgave DNN for Speech Enhancement")
 os.chdir(path)
 
-from recoverSignal import inverseFourier, overlapAdd
+from recoverSignal import inverseFourier, overlapAdd, recoverSignal
 from preprocessing import preprocessing
 from preprocessingWithGenerator import  generateAudioFromFile
 from tools import scaleUp,stackMatrix
-
-
+from generateTestData import generateTestData
 
 ## Define variables
 windowLength = 256  # Number of samples in each window
@@ -28,9 +27,9 @@ N = 16              # The audioFiles are of type intN
 q = 3               # Downsampling factor
 batchSize = 128     # How many observations the neural net looks at before updating parameters
 epochs = 1#20       # The number of training runs thorugh the data set
-observationsGeneratedPerLoop = 10000
-SNRdB = 20          # Speech to noise ratio in decibels
-
+observationsGeneratedPerLoop = 3000
+SNRdB = -40          # Speech to noise ratio in decibels
+wantedSize = 100000
 ## Load audio files from file, and put them together in one file. 
 #rawAudio = collectAudioFiles()
 
@@ -53,29 +52,38 @@ inputDim = int((windowLength/2+1)*5)
 outputDim = int(windowLength/2+1)
 
 model = Sequential()
-model.add(Dense(512, activation='relu', input_shape=(inputDim,)))
+model.add(Dense(1024, activation='relu', input_shape=(inputDim,)))
 model.add(Dropout(0.2))
-model.add(Dense(512, activation='relu'))
+model.add(Dense(1024, activation='relu'))
+model.add(Dropout(0.2))
+model.add(Dense(1024, activation='relu'))
 model.add(Dropout(0.2))
 model.add(Dense(outputDim, activation='sigmoid'))
 
 model.summary()
 
 model.compile(optimizer='adam', 
-              loss='mse')
+              loss='mse',
+              metrics=['accuracy'])
 
-model.fit_generator(generateAudioFromFile(windowLength,q,N,batchSize,SNRdB),
-                    steps_per_epoch=10, epochs=10)
+xVal,xValStacked,yVal,mixedPhase = generateTestData(windowLength,q,N,wantedSize,SNRdB)
+#xVal_stacked is ready for dnn
 
-### Recover signal
-##Dette skal nok flyttes inn i recoverSignal 
-#transformedBack = inverseFourier(preprocessedArray)
-#overlapped = overlapAdd(transformedBack)
-##Need to upscale again
-#upscaled = scaleUp(overlapped,16)
-## For testing: 
+
+model.fit_generator(generateAudioFromFile(windowLength,q,N,batchSize,SNRdB), 
+                    validation_data=(xValStacked,yVal),
+                    steps_per_epoch=10, 
+                    epochs=5,
+                    verbose=1)
+
+## Recover signal
+predictedY = model.predict(xValStacked,batch_size=batchSize,verbose=1)
+
+
+recovered = recoverSignal(xVal,predictedY,windowLength,mixedPhase,N)
+
 ## Save for listening
-#filePathSave = Path("C:/Users/Mira/Documents/NTNU1819/Bokmål/test2.wav")
-#scipy.io.wavfile.write(filePathSave,16000,data=upscaled)
-
+filePathSave = Path("C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/enhancedMain.wav")
+scipy.io.wavfile.write(filePathSave,16000,data=recovered)
+#filePathSaveOriginal = Path("C:/Users/Mira/Documents/NTNU1819/Bokmål/original.wav")
 ### Test quality

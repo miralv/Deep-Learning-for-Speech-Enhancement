@@ -9,12 +9,16 @@ def preprocessing(rawAudio,q,N,windowLength):
     # windowLength: number of samples in each window
     
     # Downsample
-    print('y before down sampling:', len(rawAudio))
-    y_new = decimate(rawAudio,q,ftype="fir")
-    print("y after down sampling:",len(y_new))
+    #print('y before down sampling:', len(rawAudio))
+    yd = decimate(rawAudio,q,ftype="fir")
+    #print("y after down sampling:",len(y_new))
 
+    # log10
+    #clean = numpy.log10(yd)
+    
     # Shift to range [-1,1]
-    y = scaleDown(y_new,N)
+    y = scaleDown(yd,N)
+    
     # Obtain windows and apply Hanning
     hanningArray = Hanning(y,windowLength)
 
