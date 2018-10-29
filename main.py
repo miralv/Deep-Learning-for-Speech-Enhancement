@@ -2,7 +2,6 @@ import numpy
 from pathlib import Path
 import glob
 import scipy.io.wavfile
-# from loadFiles import collectAudioFiles
 import sys
 import os
 
@@ -28,29 +27,17 @@ q = 3               # Downsampling factor
 batchSize = 128     # How many observations the neural net looks at before updating parameters
 epochs = 1#20       # The number of training runs thorugh the data set
 observationsGeneratedPerLoop = 3000
-SNRdB = -40          # Speech to noise ratio in decibels
+SNRdB = -10          # Speech to noise ratio in decibels
 wantedSize = 100000
-## Load audio files from file, and put them together in one file. 
-#rawAudio = collectAudioFiles()
-
-##cropper den litt for nå
-#rawAudio = rawAudio[0:10000]
-### Perform preprocessing
-## The raw audio file needs to be down sampled, shifted to the range [-1,1] and fourier transformed
-#[amplitudeCompressed, phase] = preprocessing(rawAudio,q,N,windowLength)
 
 
-## Stack the windows such that one row in stacked contains two windows on both side of window i
-#stacked = stackMatrix(amplitudeCompressed,windowLength)
 
 ## DNN
-# Split the observations in a training set and a test set
-#XTrain = stacked
-
 # Specify the dimensions of the net
 inputDim = int((windowLength/2+1)*5)
 outputDim = int(windowLength/2+1)
 
+# Specify the architecture of the model
 model = Sequential()
 model.add(Dense(1024, activation='relu', input_shape=(inputDim,)))
 model.add(Dropout(0.2))
@@ -66,24 +53,24 @@ model.compile(optimizer='adam',
               loss='mse',
               metrics=['accuracy'])
 
+# Generate test data
 xVal,xValStacked,yVal,mixedPhase = generateTestData(windowLength,q,N,wantedSize,SNRdB)
-#xVal_stacked is ready for dnn
 
 
+# Fit the model
 model.fit_generator(generateAudioFromFile(windowLength,q,N,batchSize,SNRdB), 
                     validation_data=(xValStacked,yVal),
                     steps_per_epoch=10, 
                     epochs=5,
                     verbose=1)
 
-## Recover signal
+# Test the model on test data
 predictedY = model.predict(xValStacked,batch_size=batchSize,verbose=1)
+#predictedY is the mask calculated by the dnn
 
-
+## Recover signal 
 recovered = recoverSignal(xVal,predictedY,windowLength,mixedPhase,N)
 
 ## Save for listening
 filePathSave = Path("C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/enhancedMain.wav")
 scipy.io.wavfile.write(filePathSave,16000,data=recovered)
-#filePathSaveOriginal = Path("C:/Users/Mira/Documents/NTNU1819/Bokmål/original.wav")
-### Test quality

@@ -6,6 +6,7 @@ import scipy.io.wavfile
 
 from preprocessing import preprocessing
 from tools import stackMatrix, decideSNR, idealRatioMask
+from recoverSignal import recoverSignalStandard
 
 # Need to create a generator for use in the DNN
 def generateTestData(windowLength,q,N,wantedSize,SNRdB): 
@@ -69,7 +70,7 @@ def generateTestData(windowLength,q,N,wantedSize,SNRdB):
     filePathSaveMixed = Path("C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/mixed.wav")
     scipy.io.wavfile.write(filePathSaveClean,48000,data=audioFiles)
     scipy.io.wavfile.write(filePathSaveNoise,48000,data=noiseFiles)
-    scipy.io.wavfile.write(filePathSaveMixed,48000,data=audioFiles+noiseFiles)
+    #scipy.io.wavfile.write(filePathSaveMixed,48000,data=audioFiles+noiseFiles)
 
     # Perform preprocessing before the while
     # Downsample, scale, Hanning and fft, returned as z = x + iy
@@ -83,8 +84,7 @@ def generateTestData(windowLength,q,N,wantedSize,SNRdB):
     mixedPhase = numpy.apply_along_axis(numpy.angle,axis=1,arr=mixedfftArray)
 
     # Add amplitudes to obtain desired snr
-    #amplitudeNoiseAdjusted = decideSNR(amplitudeAudio,amplitudeNoise,SNRdB)
-    amplitudeNoiseAdjusted = amplitudeNoise
+    amplitudeNoiseAdjusted = decideSNR(amplitudeAudio,amplitudeNoise,SNRdB)
     mixed = amplitudeAudio + amplitudeNoiseAdjusted
 
     # Keep only the single sided spectrum
@@ -109,6 +109,11 @@ def generateTestData(windowLength,q,N,wantedSize,SNRdB):
     mixedPhase = mixedPhase
     # Need to stack x
     xStacked = stackMatrix(x,windowLength)
+
+    # Want to save the mixed audio with wanted snr for comparison
+    MixedBefore = recoverSignalStandard(x,windowLength,mixedPhase,N)
+    scipy.io.wavfile.write(filePathSaveMixed,16000,data=MixedBefore)
+
     return [x,xStacked,y,mixedPhase]
     
 
