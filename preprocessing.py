@@ -9,12 +9,7 @@ def preprocessing(rawAudio,q,N,windowLength):
     # windowLength: number of samples in each window
     
     # Downsample
-    #print('y before down sampling:', len(rawAudio))
     yd = decimate(rawAudio,q,ftype="fir")
-    #print("y after down sampling:",len(y_new))
-
-    # log10
-    #clean = numpy.log10(yd)
     
     # Shift to range [-1,1]
     y = scaleDown(yd,N)
@@ -24,15 +19,7 @@ def preprocessing(rawAudio,q,N,windowLength):
 
     # Take the fourier transform, and get it returned in phormat z = x + iy
     fftArray = numpy.fft.fft(hanningArray)
-    # Take the fast fourier transform
-    #[amplitude,storedPhase] = fourier(hanningArray,windowLength)
     
-    # The second half of the sequence gives no new information
-    #amplitude = amplitude[:,0:int(windowLength/2+1)]
-    
-    # Take log10 of the amplitude
-    #amplitudeCompressed = numpy.log10(amplitude)
-
     return fftArray
 
 def fourier(hanningArray,windowLength):

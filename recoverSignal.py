@@ -1,15 +1,8 @@
 import numpy
 from tools import scaleUp
 
-# fra Main()
-##Dette skal nok flyttes inn i recoverSignal 
-#transformedBack = inverseFourier(preprocessedArray)
-#overlapped = overlapAdd(transformedBack)
-##Need to upscale again
-#upscaled = scaleUp(overlapped,16)
-
 def recoverSignal(origX,mask,windowLength,mixedPhase,N):
-    # dnnInput is preprocessed and stacked
+    # origX is the input to the dnn before stacking
     # dnnOutput is the dnn-estimated ideal ratio mask
 
     # Apply the mask calculated by the neural network
@@ -39,7 +32,7 @@ def recoverSignal(origX,mask,windowLength,mixedPhase,N):
     return recovered
 
 def recoverSignalStandard(origX,windowLength,mixedPhase,N):
-    # origX is preprocessed and stacked
+    # origX is preprocessed, not stacked
     # no masking here.
 
     # Take 10^masked to invert the log compression

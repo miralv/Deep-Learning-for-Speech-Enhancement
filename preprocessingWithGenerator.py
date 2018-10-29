@@ -15,7 +15,7 @@ def generateAudioFromFile(windowLength,q,N,batchSize,SNRdB):
     
     L = int(numpy.floor(windowLength/2))
 
-    # Load clean audio
+    ## Load clean audio
     audioFolder = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/part_1/group_"
     audioFiles = numpy.array([],dtype = numpy.int16)
     #for group in range(1,13):
@@ -35,10 +35,9 @@ def generateAudioFromFile(windowLength,q,N,batchSize,SNRdB):
         if len(audioFiles)> 1000000:
             break
     print('før noise')
-    # Load noise files
-
-    noiseFolder = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Nonspeech_train/"
     
+    ## Load noise files
+    noiseFolder = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Nonspeech_train/" 
     noiseFiles = numpy.array([],dtype = numpy.int16)
     for file in glob.glob(noiseFolder + "*.wav"):
         f_rate,data = scipy.io.wavfile.read(file)
@@ -89,8 +88,5 @@ def generateAudioFromFile(windowLength,q,N,batchSize,SNRdB):
         startIndex = random.randint(0,stop)
         y = IRM[startIndex:startIndex+batchSize,:]
         x = mixed[startIndex:startIndex+batchSize,:]
-        # Need to stack x
         xStacked = stackMatrix(x,windowLength)
-        print('in while')
-        #print('training:',str(training))
         yield xStacked,y
