@@ -1,14 +1,24 @@
-import numpy
+import numpy as np
+import matplotlib.pyplot as plt
 from pathlib import Path
 import glob
 import scipy.io.wavfile
 import sys
 import os
+import stat
+import datetime
+import time
+import random
+
+
+import matplotlib.cm as cm
+import pandas as pd 
 
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras.optimizers import RMSprop
+from keras import regularizers
 
 
 path = Path("C:/Users/Mira/source/repos/Prosjektoppgave DNN for Speech Enhancement")
@@ -20,20 +30,28 @@ from preprocessingWithGenerator import  generateAudioFromFile
 from tools import scaleUp,stackMatrix
 from generateTestData import generateTestData
 
-## Define variables
-windowLength = 256  # Number of samples in each window
-N = 16              # The audioFiles are of type intN
-q = 3               # Downsampling factor
-batchSize = 128     # How many observations the neural net looks at before updating parameters
-epochs = 1#20       # The number of training runs thorugh the data set
-observationsGeneratedPerLoop = 3000
-SNRdB = -10          # Speech to noise ratio in decibels
-wantedSize = 100000
+# For reproduction
+#np.random.seed(1234)
 
+
+## Define variables
+windowLength = 256      # Number of samples in each window
+N = 16                  # The audioFiles are of type intN
+q = 3                   # Downsampling factor for the clean audio files
+SNRdB = 5               # Speech to noise ratio in decibels
+batchSize = 300         # How many observations the neural net looks at before updating parameters
+Nepochs = 20            # The number of epochs
+stepsPerEpoch = 20      # Number of steps (batches of samples yield from generator) per epoch
+audioFolderTest = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Speech/Test/"
+audioFolderValidation = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Speech/Validate/"
+noiseFileTest = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Noise/Test/n78.wav"
+#noiseFileValidation = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Noise/Validate/n72.wav"
+noiseFileValidation = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Noise/Validate/n77.wav"
+    
 
 
 ## DNN
-# Specify the dimensions of the net
+# Specify the dimensions of input layer and output layer
 inputDim = int((windowLength/2+1)*5)
 outputDim = int(windowLength/2+1)
 
@@ -48,29 +66,119 @@ model.add(Dropout(0.2))
 model.add(Dense(outputDim, activation='sigmoid'))
 
 model.summary()
-
 model.compile(optimizer='adam', 
-              loss='mse',
-              metrics=['accuracy'])
+              loss='mse')
 
-# Generate test data
-xVal,xValStacked,yVal,mixedPhase = generateTestData(windowLength,q,N,wantedSize,SNRdB)
+# Generate validation data and test data
+_,xValStacked,yVal,_ =  generateTestData(windowLength,q,N,SNRdB, audioFolderValidation,noiseFileValidation)
+xTest,xTestStacked,yTest,mixedPhase = generateTestData(windowLength,q,N,SNRdB, audioFolderTest,noiseFileTest)
 
 
+#blir dimensions (len(SNRdBs),Nwindows,InfoPerwindow), where InfoPerwindow= outputDim for everything but xTeststacked, where it is inputDim
+
+
+#Vil teste resultatet for ulik batch -size
+#16, 32, 64, 128, 256
+
+
+
+batchSizes = [4,16,64,128,256]
+colors = cm.rainbow(np.linspace(0, 1, len(batchSizes)))
+
+
+fig2 = plt.subplots(1,1)
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.xlim(0, 20)
+plt.ylim(0, 0.25)
+plt.xticks(np.arange(0,21,5))
+plt.yticks(np.arange(0,0.26,0.05))
+
+#vil lagre resultater fått ved epoch 1, epoch 10 og epoch 20 
+epoch_errors_train = np.zeros((len(batchSizes),3))
+epoch_errors_validate = np.zeros((len(batchSizes),3))
+#test_errors = np.zeros(len(batchSizes))
+indexes = [0, 9,19]
+
+for i,batchSize in enumerate(batchSizes):
 # Fit the model
-model.fit_generator(generateAudioFromFile(windowLength,q,N,batchSize,SNRdB), 
-                    validation_data=(xValStacked,yVal),
-                    steps_per_epoch=10, 
-                    epochs=5,
-                    verbose=1)
+    history = model.fit_generator(generateAudioFromFile(windowLength,q,N,batchSize,SNRdB), 
+                        validation_data=(xValStacked,yVal),
+                        steps_per_epoch=stepsPerEpoch, 
+                        epochs=Nepochs,
+                        verbose=0)
+    
+    label_train = 'Train, Batch size=' + str(batchSize)
+    label_validate = 'Validation, Batch size=' + str(batchSize)
+
+    plt.plot(history.history['loss'], ls='dashed',color=colors[i], label= label_train)
+    plt.plot(history.history['val_loss'],color=colors[i], label = label_validate)
+
+    
+    epoch_errors_train[i] = [history.history['loss'][ind] for ind in indexes]
+    epoch_errors_validate[i] = [history.history['val_loss'][ind] for ind in indexes]
+
+
+    #y_pred = model.predict(xTestStacked,batch_size=batchSize,verbose=0)
+    #test_errors[i] = keras.losses.mean_squared_error(yVal, y_pred)
+    
+plt.legend()
+
+
+plt.show()
+
+   
+ts =  '27.12_'
+#print(ts)
+
 
 # Test the model on test data
-predictedY = model.predict(xValStacked,batch_size=batchSize,verbose=1)
-#predictedY is the mask calculated by the dnn
+filePathSave = Path("C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Mixed/Simplified")
 
-## Recover signal 
-recovered = recoverSignal(xVal,predictedY,windowLength,mixedPhase,N)
+v = "history2" + ts +".pdf"
+savePath = filePathSave / v
+plt.savefig(savePath)
+
+
+
+
+predictedY = model.predict(xTestStacked,batch_size=batchSize,verbose=0)
+recovered = recoverSignal(xTest,predictedY,windowLength,mixedPhase,N)
+trueIRM = recoverSignal(xTest,yTest,windowLength,mixedPhase,N)
+
+
 
 ## Save for listening
-filePathSave = Path("C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/enhancedMain.wav")
-scipy.io.wavfile.write(filePathSave,16000,data=recovered)
+v = "enhancedMain" + str(SNRdB) + ts + ".wav"
+savePath = filePathSave / v
+scipy.io.wavfile.write(savePath,16000,data=recovered)
+
+
+# Want to save the applied true irm also:
+v = "appliedTrueIRM" + str(SNRdB) + ts + ".wav"
+savePath = filePathSave / v
+scipy.io.wavfile.write(savePath,16000,data=trueIRM)
+
+
+## Plot and save plot
+s = "IRM" + str(SNRdB) + ts + ".pdf"
+savePathPlot = filePathSave / s
+#plt.orientation = 'horizontal'
+fig, (ax1,ax2) = plt.subplots(2,1,figsize=(10,5),tight_layout=True)
+im1 = ax1.imshow(predictedY.transpose())
+ax1.invert_yaxis()
+im2 = ax2.imshow(yTest.transpose())
+ax2.invert_yaxis()
+
+ax1.set_xlabel('Frame')
+ax2.set_xlabel('Frame')
+ax1.set_ylabel('Frequency bin')
+ax2.set_ylabel('Frequency bin')
+ax1.set_title("Predicted IRM")
+ax2.set_title("IRM")
+im1.set_clim(0,1)
+im2.set_clim(0,1)
+plt.savefig(savePathPlot)
+plt.show()
+
+

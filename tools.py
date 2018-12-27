@@ -1,7 +1,7 @@
-import numpy
+import numpy as np
 # Scale from intN to float in [-1,1]
 def scaleDown(a,N):
-    c = numpy.divide(a, 2.0**(N-1) -1)
+    c = np.divide(a, 2.0**(N-1) -1)
     #because the minimum value was 2**N-1, we might have values < -1.
     c = list(map(lambda x: max(x,-1.0), c))
     return c
@@ -10,9 +10,9 @@ def scaleDown(a,N):
 def scaleUp(a,N):
     b = list(map(lambda x : x*(2**(N-1)-1),a))
     if N == 32:
-        return numpy.array(b,dtype= numpy.int32)
+        return np.array(b,dtype= np.int32)
     if N==16: 
-        return numpy.array(b,dtype = numpy.int16)
+        return np.array(b,dtype = np.int16)
     return 0
 
 
@@ -20,7 +20,7 @@ def scaleUp(a,N):
 def stackMatrix(matrix,windowLength):
     Nrows,Ncolumns = matrix.shape
 
-    stackedMatrix = numpy.zeros(shape = (Nrows,Ncolumns*5))
+    stackedMatrix = np.zeros(shape = (Nrows,Ncolumns*5))
     # Fill the first two layers manually
 
     stackedMatrix[0][2*Ncolumns:3*Ncolumns]= matrix[0]
@@ -54,12 +54,12 @@ def mapToVector(matrix):
     return vector
 
 # Calculate current SNR-level
-def calculateSNRdB(noise,cleanAudio):
-    SNRdB = 10*numpy.log10((findRMS(cleanAudio)**2)/(findRMS(noise)**2))
+def calculateSNRdB(cleanAudio,noise):
+    SNRdB = 10*np.log10((findRMS(cleanAudio)**2)/(findRMS(noise)**2))
     return SNRdB
 
 # Decide wanted SNR-level and change magnitude of the noise vector accordingly
-def decideSNR(noise,cleanAudio,SNRdB):
+def decideSNR(cleanAudio,noise,SNRdB):
     # returns the noise-vector multiplied by a constant s.t. 
     # the wanted SNR-level is obtained.
     Anoise = findRMS(noise)
@@ -68,18 +68,36 @@ def decideSNR(noise,cleanAudio,SNRdB):
     factor = ANoise_new/Anoise
     return factor*noise
 
+#NB!!!!! audio og noise var i motsatt rekkefølge!!!!!
+def findSNRfactor(cleanAudio,noise,SNRdB):
+    # returns the noise-vector multiplied by a constant s.t. 
+    # the wanted SNR-level is obtained.
+
+    Anoise = findRMS(noise)
+    if Anoise == 0:
+        print('Dividing by zero!!')
+
+    Aclean = findRMS(cleanAudio)
+    ANoise_new = Aclean/(10**(SNRdB/20))
+    factor = ANoise_new/Anoise
+    return factor
+
+
+
+
 # Find RMS of a vector
 def findRMS(vector):
-    return numpy.sqrt(numpy.mean(vector**2))
+    #Cast to a large dtype to prevent negative numbers due to overflow
+    return np.sqrt(np.mean(np.power(vector,2,dtype='float64')))
 
 # Calculate the ideal ratio mask
 def idealRatioMask(cleanAudioMatrix,noiseMatrix,beta):
     times, frequencies = noiseMatrix.shape
-    IRM = numpy.zeros(shape = (times,frequencies))
+    IRM = np.zeros(shape = (times,frequencies))
     for t in range(0,times):
         for f in range(0,frequencies):
             #for each time-frequency unit
-            speechEnergySquared = cleanAudioMatrix[t,f]**2
-            noiseEnergySquared = noiseMatrix[t,f]**2
+            speechEnergySquared = np.power(cleanAudioMatrix[t,f],2)
+            noiseEnergySquared = np.power(noiseMatrix[t,f],2)
             IRM[t,f]= (speechEnergySquared/(speechEnergySquared + noiseEnergySquared))**beta
     return IRM
