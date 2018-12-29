@@ -5,7 +5,7 @@ import glob
 import scipy.io.wavfile
 
 from preprocessing import preprocessing
-from tools import stackMatrix, decideSNR, idealRatioMask, findSNRfactor
+from tools import stackMatrix, idealRatioMask, findSNRfactor
 
 #Vil teste om det egentlig blir forskjellig å gange med snr-factor???????
 
@@ -92,7 +92,7 @@ def generateAudioFromFile(windowLength,q,N,batchSize,SNRdB):
         startIndex = random.randint(0,stop)
         y = IRM[startIndex:startIndex+batchSize,:]
         x = mixed[startIndex:startIndex+batchSize,:]
-        xStacked = stackMatrix(x,windowLength)
+        xStacked = stackMatrix(x)
         
         
         yield xStacked,y

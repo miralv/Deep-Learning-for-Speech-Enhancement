@@ -3,11 +3,21 @@ from scipy.signal import decimate
 from tools import *
 import librosa
 import resampy
-# Downsample, scale perform Hanning and apply FFT on the rawAudio
+
 def preprocessing(rawAudio,q,N,windowLength,noise):
-    # q: downsampling factor (typically 3)
-    # N: audiofile has values in intN
-    # windowLength: number of samples in each window
+    """ Downsample, scale perform Hanning and apply FFT on the rawAudio
+
+    # Arguments
+        rawAudio: audio file
+        q: downsampling factor
+        N: audio file has values of type intN
+        windowLength: number of samples per window
+        noise: boolean variable, 1 if noise
+        
+    # Returns
+        Preprocessed audio
+    """
+
 
     # Downsample
     if noise !=1:
@@ -28,16 +38,12 @@ def preprocessing(rawAudio,q,N,windowLength,noise):
     
     return fftArray
 
-def fourier(hanningArray,windowLength):
-    # Take fft of each window, i.e. each row
-    fftArray = np.fft.fft(hanningArray,axis = 1)#np.apply_along_axis(np.fft,axis=1,arr=hanningArray)
-    # Store the phase
-    storedPhase = np.apply_along_axis(np.angle,axis=1,arr=fftArray)
-    amplitude = np.apply_along_axis(np.absolute,axis=1,arr=fftArray)
-    return [amplitude,storedPhase]
-
 
 def Hanning(y,windowLength):
+    """ Apply Hanning on input y
+    """
+
+
     # Create a Hanning window
     window = np.hanning(windowLength)
 
@@ -49,7 +55,7 @@ def Hanning(y,windowLength):
     print(N_windows)
     hanningArray = np.zeros(shape=(N_windows,windowLength))
     for i in range(0,N_windows):
-        start_ind = int(i * windowLength/2) #assuming window length is dividible by two.
+        start_ind = int(i * windowLength/2) # Assuming window length is dividible by two.
         hanningArray[i]= y_use[start_ind:start_ind+windowLength]*window
 
     return hanningArray

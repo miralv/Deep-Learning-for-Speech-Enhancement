@@ -5,7 +5,7 @@ import scipy.io.wavfile
 
 
 from preprocessing import preprocessing
-from tools import stackMatrix, decideSNR, idealRatioMask,findSNRfactor
+from tools import stackMatrix, idealRatioMask,findSNRfactor
 from recoverSignal import recoverSignalStandard
 
 # Generate test data and validation data
@@ -79,7 +79,7 @@ def generateTestData(windowLength,q,N,SNRdB, audioFolder, noiseFile):
     x = mixed
     mixedPhase = mixedPhase
     # Need to stack x
-    xStacked = stackMatrix(x,windowLength)
+    xStacked = stackMatrix(x)
 
     # Want to save the mixed audio with wanted snr for comparison
     MixedBefore,scaling_factor = recoverSignalStandard(x,windowLength,mixedPhase,N)

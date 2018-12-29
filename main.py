@@ -9,11 +9,8 @@ import stat
 import datetime
 import time
 import random
-
-
 import matplotlib.cm as cm
 import pandas as pd 
-
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
@@ -30,22 +27,18 @@ from preprocessingWithGenerator import  generateAudioFromFile
 from tools import scaleUp,stackMatrix
 from generateTestData import generateTestData
 
-# For reproduction
-#np.random.seed(1234)
-
 
 ## Define variables
 windowLength = 256      # Number of samples in each window
 N = 16                  # The audioFiles are of type intN
 q = 3                   # Downsampling factor for the clean audio files
 SNRdB = 5               # Speech to noise ratio in decibels
-batchSize = 300         # How many observations the neural net looks at before updating parameters
+batchSize = 300         # Mini batch size used in the DNN
 Nepochs = 20            # The number of epochs
-stepsPerEpoch = 20      # Number of steps (batches of samples yield from generator) per epoch
+stepsPerEpoch = 20      # Number of steps (batches of samples yielded from generator) per epoch
 audioFolderTest = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Speech/Test/"
 audioFolderValidation = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Speech/Validate/"
 noiseFileTest = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Noise/Test/n78.wav"
-#noiseFileValidation = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Noise/Validate/n72.wav"
 noiseFileValidation = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Noise/Validate/n77.wav"
     
 
@@ -55,7 +48,7 @@ noiseFileValidation = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/No
 inputDim = int((windowLength/2+1)*5)
 outputDim = int(windowLength/2+1)
 
-# Specify the architecture of the model
+# Define the DNN
 model = Sequential()
 model.add(Dense(1024, activation='relu', input_shape=(inputDim,)))
 model.add(Dropout(0.2))
@@ -74,13 +67,6 @@ _,xValStacked,yVal,_ =  generateTestData(windowLength,q,N,SNRdB, audioFolderVali
 xTest,xTestStacked,yTest,mixedPhase = generateTestData(windowLength,q,N,SNRdB, audioFolderTest,noiseFileTest)
 
 
-#blir dimensions (len(SNRdBs),Nwindows,InfoPerwindow), where InfoPerwindow= outputDim for everything but xTeststacked, where it is inputDim
-
-
-#Vil teste resultatet for ulik batch -size
-#16, 32, 64, 128, 256
-
-
 
 batchSizes = [4,16,64,128,256]
 colors = cm.rainbow(np.linspace(0, 1, len(batchSizes)))
@@ -89,17 +75,19 @@ colors = cm.rainbow(np.linspace(0, 1, len(batchSizes)))
 fig2 = plt.subplots(1,1)
 plt.ylabel('Loss')
 plt.xlabel('Epoch')
-plt.xlim(0, 20)
+plt.xlim(1, 20)
 plt.ylim(0, 0.25)
-plt.xticks(np.arange(0,21,5))
+plt.xticks(np.arange(5,21,5))
 plt.yticks(np.arange(0,0.26,0.05))
+#plt.show()
 
 #vil lagre resultater fått ved epoch 1, epoch 10 og epoch 20 
 epoch_errors_train = np.zeros((len(batchSizes),3))
 epoch_errors_validate = np.zeros((len(batchSizes),3))
-#test_errors = np.zeros(len(batchSizes))
+test_errors = np.zeros(len(batchSizes))
 indexes = [0, 9,19]
 
+x_values = np.arange(1,21,1)
 for i,batchSize in enumerate(batchSizes):
 # Fit the model
     history = model.fit_generator(generateAudioFromFile(windowLength,q,N,batchSize,SNRdB), 
@@ -111,31 +99,28 @@ for i,batchSize in enumerate(batchSizes):
     label_train = 'Train, Batch size=' + str(batchSize)
     label_validate = 'Validation, Batch size=' + str(batchSize)
 
-    plt.plot(history.history['loss'], ls='dashed',color=colors[i], label= label_train)
-    plt.plot(history.history['val_loss'],color=colors[i], label = label_validate)
+    plt.plot(x_values,history.history['loss'], ls='dashed',color=colors[i], label= label_train)
+    plt.plot(x_values,history.history['val_loss'],color=colors[i], label = label_validate)
 
     
     epoch_errors_train[i] = [history.history['loss'][ind] for ind in indexes]
     epoch_errors_validate[i] = [history.history['val_loss'][ind] for ind in indexes]
-
-
-    #y_pred = model.predict(xTestStacked,batch_size=batchSize,verbose=0)
-    #test_errors[i] = keras.losses.mean_squared_error(yVal, y_pred)
+    test_errors[i] = model.evaluate(xTestStacked,yTest)
     
 plt.legend()
 
 
-plt.show()
+#plt.show()
 
    
-ts =  '27.12_'
+ts =  '29.12_'
 #print(ts)
 
 
 # Test the model on test data
 filePathSave = Path("C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Mixed/Simplified")
 
-v = "history2" + ts +".pdf"
+v = "history" + ts +".pdf"
 savePath = filePathSave / v
 plt.savefig(savePath)
 
