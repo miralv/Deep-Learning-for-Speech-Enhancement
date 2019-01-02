@@ -8,32 +8,44 @@ from preprocessing import preprocessing
 from tools import stackMatrix, idealRatioMask,findSNRfactor
 from recoverSignal import recoverSignalStandard
 
-# Generate test data and validation data
 def generateTestData(windowLength,q,N,SNRdB, audioFolder, noiseFile): 
+    """ Generate test data and validation data
+
+
+    # Arguments
+        windowLength: number of samples per window
+        q: downsampling factor
+        N: audio file has values of type intN
+        SNRdB: wanted level of SNR given in dB
+        audioFolder: folder where the speech files are located 
+        noiseFile: noise file
+        
+    # Returns
+        Test or validation data:
+        x: preprocessed mixed sound
+        xStacked: x stacked to have 5 windows per row
+        y: analytical IRM
+        mixedPhase: mixed phase saved for reconstruction
+        
+    """
+
 
     L = int(np.floor(windowLength/2))
 
-    ## Load clean audio
-    #audioFolder = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Speech/Test/"
+    # Load clean audio
     audioFiles = np.array([],dtype = np.int16)
     for file in glob.glob(audioFolder + "*.wav"):
         f_audio, data = scipy.io.wavfile.read(file)
         data = data[0:( len(data) - len(data)%windowLength)]    
         audioFiles = np.append(audioFiles,data)
         
-    
-    ## Load noise files
-    #noiseFile = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Noise/Test/n78.wav"
-    #noiseFile = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Simplified/Noise/Test/n17.wav"
-    
+    # Load noise files    
     f_noise,data = scipy.io.wavfile.read(noiseFile)
     data = data[0:( len(data) - len(data)%windowLength)]    
     noiseFiles = np.array([],dtype = np.int16)
     while len(noiseFiles)< int(f_noise*len(audioFiles)/f_audio):
         noiseFiles = np.append(noiseFiles,data)
 
-
-    
     # Perform preprocessing before the while
     # Downsample, scale, Hanning and fft, returned as z = x + iy
     audiofftArray = preprocessing(audioFiles,q,N,windowLength,0)
@@ -41,15 +53,12 @@ def generateTestData(windowLength,q,N,SNRdB, audioFolder, noiseFile):
     noisefftArray = preprocessing(noiseFiles,q,N,windowLength,1)
     amplitudeNoise = np.apply_along_axis(np.absolute,axis=1,arr=noisefftArray)
     
-
     # Make sure they are of the same size
     Nmin = min(np.shape(audiofftArray)[0],np.shape(noisefftArray)[0])
     audiofftArray = audiofftArray[0:Nmin]
     amplitudeAudio = amplitudeAudio[0:Nmin]
     noisefftArray = noisefftArray[0:Nmin]
     amplitudeNoise = amplitudeNoise[0:Nmin]
-
-
 
     # Store the phase for reconstruction
     SNR_factor = findSNRfactor(audioFiles,noiseFiles,SNRdB)
@@ -63,25 +72,25 @@ def generateTestData(windowLength,q,N,SNRdB, audioFolder, noiseFile):
     clean = amplitudeAudio[:,0:int(windowLength/2+1)]
     noise = amplitudeNoiseAdjusted[:,0:int(windowLength/2+1)]
 
-    ## log10
+    # Log10
+    # Add ones to avoid amplification of values in (0,1)
     o = np.ones(mixed.shape)
     mixed = np.log10(mixed+o)
     clean = np.log10(clean+o)
     noise = np.log10(noise+o)
     
-
     # Calculate IRM
     beta = 1/2
     IRM = idealRatioMask(clean,noise,beta)
 
-    # No need to choose this randomly(?)
+    # Give the return variables their values
     y = IRM
     x = mixed
     mixedPhase = mixedPhase
     # Need to stack x
     xStacked = stackMatrix(x)
 
-    # Want to save the mixed audio with wanted snr for comparison
+    # Store the audio files
     MixedBefore,scaling_factor = recoverSignalStandard(x,windowLength,mixedPhase,N)
     noiseFilesAdjusted = noiseFiles*SNR_factor
     audioFiles_before = np.divide(audioFiles,scaling_factor)
@@ -93,7 +102,6 @@ def generateTestData(windowLength,q,N,SNRdB, audioFolder, noiseFile):
 
     scipy.io.wavfile.write(filePathSaveClean,48000,data=audioFiles)
     scipy.io.wavfile.write(filePathSaveNoise,20000,data=noiseFiles)
-
 
     v = "original" + str(SNRdB) + ".wav"
     savePath = filePathSaveMixed / v

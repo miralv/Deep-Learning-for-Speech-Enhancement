@@ -40,7 +40,6 @@ def scaleUp(a,N):
     return 0
 
 
-
 def stackMatrix(matrix):
     """ Stack the matrix such that five successive observations are stored in each row.
     Use zero padding for the two observations in both ends.
@@ -105,7 +104,7 @@ def findSNRfactor(cleanAudio,noise,SNRdB):
     # Arguments
         cleanAudio: vector with the speech file
         noise: vector with the noise file
-        SNRdB: wanted level of SNR
+        SNRdB: wanted level of SNR given in dB
         
     # Returns
         The calculated factor
@@ -122,8 +121,6 @@ def findSNRfactor(cleanAudio,noise,SNRdB):
     return factor
 
 
-
-
 def findRMS(vector):
     """ Fint the RMS of a vector.
 
@@ -137,7 +134,7 @@ def findRMS(vector):
     #Cast to a large dtype to prevent negative numbers due to overflow
     return np.sqrt(np.mean(np.power(vector,2,dtype='float64')))
 
-# Calculate the ideal ratio mask
+
 def idealRatioMask(cleanAudioMatrix,noiseMatrix,beta):
     """ Calculate the ideal ratio mask
 
