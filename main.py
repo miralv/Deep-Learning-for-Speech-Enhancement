@@ -6,8 +6,6 @@ import scipy.io.wavfile
 import sys
 import os
 import stat
-import datetime
-import time
 import random
 import matplotlib.cm as cm
 import pandas as pd 
@@ -33,7 +31,6 @@ windowLength = 256      # Number of samples in each window
 N = 16                  # The audioFiles are of type intN
 q = 3                   # Downsampling factor for the clean audio files
 SNRdB = 5               # Speech to noise ratio in decibels
-batchSize = 300         # Mini batch size used in the DNN
 Nepochs = 20            # The number of epochs
 stepsPerEpoch = 20      # Number of steps (batches of samples yielded from generator) per epoch
 audioFolderTest = "C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Audio/Speech/Test/"
@@ -67,7 +64,7 @@ _,xValStacked,yVal,_ =  generateTestData(windowLength,q,N,SNRdB, audioFolderVali
 xTest,xTestStacked,yTest,mixedPhase = generateTestData(windowLength,q,N,SNRdB, audioFolderTest,noiseFileTest)
 
 
-
+# Test the performance for different batch sizes
 batchSizes = [4,16,64,128,256]
 colors = cm.rainbow(np.linspace(0, 1, len(batchSizes)))
 
@@ -79,9 +76,8 @@ plt.xlim(1, 20)
 plt.ylim(0, 0.25)
 plt.xticks(np.arange(5,21,5))
 plt.yticks(np.arange(0,0.26,0.05))
-#plt.show()
 
-#vil lagre resultater fått ved epoch 1, epoch 10 og epoch 20 
+# Create matrices with errors for epoch 1, 10 and 20
 epoch_errors_train = np.zeros((len(batchSizes),3))
 epoch_errors_validate = np.zeros((len(batchSizes),3))
 test_errors = np.zeros(len(batchSizes))
@@ -89,7 +85,7 @@ indexes = [0, 9,19]
 
 x_values = np.arange(1,21,1)
 for i,batchSize in enumerate(batchSizes):
-# Fit the model
+    # Fit the model
     history = model.fit_generator(generateAudioFromFile(windowLength,q,N,batchSize,SNRdB), 
                         validation_data=(xValStacked,yVal),
                         steps_per_epoch=stepsPerEpoch, 
@@ -108,53 +104,37 @@ for i,batchSize in enumerate(batchSizes):
     test_errors[i] = model.evaluate(xTestStacked,yTest)
     
 plt.legend()
-
-
-#plt.show()
-
-   
-ts =  '29.12_'
-#print(ts)
-
-
-# Test the model on test data
 filePathSave = Path("C:/Users/Mira/Documents/NTNU1819/Prosjektoppgave/Mixed/Simplified")
-
-v = "history" + ts +".pdf"
+v = "history.pdf"
 savePath = filePathSave / v
 plt.savefig(savePath)
 
-
-
-
+# Make prediction and perform postprocessing
 predictedY = model.predict(xTestStacked,batch_size=batchSize,verbose=0)
-recovered = recoverSignal(xTest,predictedY,windowLength,mixedPhase,N)
-trueIRM = recoverSignal(xTest,yTest,windowLength,mixedPhase,N)
+recovered = recoverSignal(xTest,predictedY,windowLength,mixedPhase,N) # Recovered where the predicted IRM is applied
+trueIRM = recoverSignal(xTest,yTest,windowLength,mixedPhase,N) # Recovered where the analytical IRM is applied
 
 
 
 ## Save for listening
-v = "enhancedMain" + str(SNRdB) + ts + ".wav"
+v = "enhancedMain" + str(SNRdB) + ".wav"
 savePath = filePathSave / v
 scipy.io.wavfile.write(savePath,16000,data=recovered)
 
 
-# Want to save the applied true irm also:
 v = "appliedTrueIRM" + str(SNRdB) + ts + ".wav"
 savePath = filePathSave / v
 scipy.io.wavfile.write(savePath,16000,data=trueIRM)
 
 
-## Plot and save plot
+# Plot predicted IRM vs analytical IRM
 s = "IRM" + str(SNRdB) + ts + ".pdf"
 savePathPlot = filePathSave / s
-#plt.orientation = 'horizontal'
 fig, (ax1,ax2) = plt.subplots(2,1,figsize=(10,5),tight_layout=True)
 im1 = ax1.imshow(predictedY.transpose())
 ax1.invert_yaxis()
 im2 = ax2.imshow(yTest.transpose())
 ax2.invert_yaxis()
-
 ax1.set_xlabel('Frame')
 ax2.set_xlabel('Frame')
 ax1.set_ylabel('Frequency bin')
