@@ -1,50 +1,61 @@
-import numpy
+import numpy as np
 from scipy.signal import decimate
 from tools import *
+import librosa
+import resampy
 
-def preprocessing(rawAudio,q,N,windowLength):
-    # q: downsampling factor (typically 3)
-    # N: audiofile has values in intN
-    # windowLength: number of samples in each window
-    
+def preprocessing(rawAudio,q,N,windowLength,noise):
+    """ Downsample, scale perform Hanning and apply FFT on the rawAudio
+
+    # Arguments
+        rawAudio: audio file
+        q: downsampling factor
+        N: audio file has values of type intN
+        windowLength: number of samples per window
+        noise: boolean variable, 1 if noise
+        
+    # Returns
+        Preprocessed audio
+    """
+
+
     # Downsample
-    y_new = decimate(rawAudio,q,ftype="fir")
+    if noise !=1:
+        yd = decimate(rawAudio,q,ftype="fir")
+    else:
+        orig_sr = 20000
+        target_sr = 16000
+        yd = resampy.resample(rawAudio, orig_sr, target_sr)
+    
     # Shift to range [-1,1]
-    y = scaleDown(y_new,N)
+    y = scaleDown(yd,N)
 
     # Obtain windows and apply Hanning
     hanningArray = Hanning(y,windowLength)
 
-    # Take the fast fourier transform
-    [amplitude,storedPhase] = fourier(hanningArray,windowLength)
-    # The second half of the sequence gives no new information
-    amplitude = amplitude[:,0:int(windowLength/2+1)]
-    return [amplitude,storedPhase]
-    #fftArray = fourier(hanningArray)
-    #return fftArray
-
-def fourier(hanningArray,windowLength):
-    # Take fft of each window, i.e. each row
-    fftArray = numpy.fft.fft(hanningArray,axis = 1)#numpy.apply_along_axis(numpy.fft,axis=1,arr=hanningArray)
-    # Store the phase
-    storedPhase = numpy.apply_along_axis(numpy.angle,axis=1,arr=fftArray)
-    amplitude = numpy.apply_along_axis(numpy.absolute,axis=1,arr=fftArray)
-    return [amplitude,storedPhase]
+    # Take the fourier transform, and get it returned in phormat z = x + iy
+    fftArray = np.fft.fft(hanningArray)
+    
+    return fftArray
 
 
-def Hanning(y,window_length):
+def Hanning(y,windowLength):
+    """ Apply Hanning on input y
+    """
+
+
     # Create a Hanning window
-    window = numpy.hanning(window_length)
+    window = np.hanning(windowLength)
 
     # Apply it
     # Remove entries s.t. there is an integer number of windows 
-    N_use = len(y)-len(y)%window_length
+    N_use = len(y)-len(y)%windowLength
     y_use = y[0:N_use]
-    N_windows = int(numpy.floor(2*N_use/window_length)-1)
-
-    hanningArray = numpy.zeros(shape=(N_windows,window_length))
+    N_windows = int(np.floor(2*N_use/windowLength)-1)
+    print(N_windows)
+    hanningArray = np.zeros(shape=(N_windows,windowLength))
     for i in range(0,N_windows):
-        start_ind = int(i * window_length/2) #assuming window length is dividible by two.
-        hanningArray[i]= y_use[start_ind:start_ind+window_length]*window
+        start_ind = int(i * windowLength/2) # Assuming window length is dividible by two.
+        hanningArray[i]= y_use[start_ind:start_ind+windowLength]*window
 
     return hanningArray
